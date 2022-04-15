@@ -196,7 +196,7 @@ watch:";
             command: eddy";
             done
             echo "$eddy_yaml_file" > $eddy_yaml_name;
-            md5sum $eddy_yaml_name > $eddy_yaml_name.md5
+            md5sum $eddy_yaml_name > ${eddy_yaml_name}.md5
             exit 0;
         fi
     done
@@ -206,6 +206,12 @@ fi
 if [[ ${_init['flag']} == 1 ]]; then
     for arg in ${_init['args']}; do
         if [[ $arg == 'conf' ]]; then
+            if md5sum -c ${eddy_yaml_name}.md5 > /dev/null 2>&1; then
+                echo "Original $eddy_yaml_name file is a template";
+                echo "Update it before creating $direvent_config_name file";
+                exit 0;
+            fi
+
             eddy_config_file=$(yq $eddy_yaml_name);
             direvent_config_file='';
             direvent_config_file+=\
