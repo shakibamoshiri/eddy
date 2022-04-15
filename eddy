@@ -66,6 +66,13 @@ function print_title(){
     echo $(colorize cyan "$@");
 }
 
+################################################################################
+# variables;
+################################################################################
+declare -A _init;
+_init['flag']=0;
+_init['args']='';
+
 docker_compose_file='docker-compose.yml';
 eddy_yaml_name='eddy.yml';
 direvent_config_name='direvent.conf';
