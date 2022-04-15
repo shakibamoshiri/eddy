@@ -112,9 +112,8 @@ function _reload_help(){
 
 function _watch_help(){
     printf "%-25s %s\n" "-w │ --watch" "Watching";
-    printf "%-40s %s\n" "   ├── $(colorize 'cyan' 'start')" "Start watching";
 
-    printf "%-40s %s\n" "   └── $(colorize 'cyan' 'log')" "Log the output";
+    printf "%-40s %s\n" "   └── $(colorize 'cyan' 'debug')" "Log more details";
 }
 
 function _count_help(){
@@ -175,17 +174,10 @@ function _init_call(){
 }
 
 function _watch_call(){
-    if [[ ${_watch['args']} == '' ]]; then
-        _watch_help;
-    fi
-
     for arg in ${_watch['args']}; do
         case $arg in
-            start )
-                echo "Start watching";
-            ;;
-            count )
-                echo "Count any reload";
+            debug )
+                echo "Start watching in debug mode";
             ;;
             * )
                 echo "unknown --watch $arg"
@@ -357,11 +349,11 @@ if [[ ${_init['flag']} == 1 ]]; then
 fi
 
 if [[ ${_watch['flag']} == 1 ]]; then
-    for arg in ${_watch['args']}; do
-        if [[ $arg == start ]]; then
-            direvent -f direvent.conf;
-        fi
-    done
+    if [[ ${_watch['args']} == 'debug' ]]; then
+        direvent -d -f direvent.conf;
+    else
+        direvent -f direvent.conf;
+    fi
 fi
 
 
