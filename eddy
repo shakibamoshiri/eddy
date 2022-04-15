@@ -97,23 +97,23 @@ readonly this_cli_name='eddy';
 ################################################################################
 function _init_help(){
     printf "%-25s %s\n" "-i │ --init" "Initializing";
-    printf "%-40s %s\n" "   ├── $(colorize 'cyan' 'env')" "Initialize environmental variables";
-    printf "%-40s %s\n" "   ├── $(colorize 'cyan' 'yaml')" "Initialize yaml file";
-    printf "%-40s %s\n" "   ├── $(colorize 'cyan' 'conf')" "Initialize direvent.conf file";
+    printf "%-40s %s\n" "   ├── $(colorize 'cyan' 'env')" "environmental variables for ${this_cli_name}.env";
+    printf "%-40s %s\n" "   ├── $(colorize 'cyan' 'yaml')" "yaml file for ${this_cli_name}.yml";
+    printf "%-40s %s\n" "   ├── $(colorize 'cyan' 'conf')" "configuration file for direvent.conf";
 
-    printf "%-40s %s\n" "   └── $(colorize 'cyan' 'apply')" "Adding environmental variables to docker-compose.yml";
+    printf "%-40s %s\n" "   └── $(colorize 'cyan' 'apply')" "environment: into docker-compose.yml";
 }
 
 function _reload_help(){
     printf "%-25s %s\n" "-r │ --reload" "Reloading";
 
-    printf "%-40s %s\n" "   └── $(colorize 'yellow' '[S1...]')" "List of services to reload";
+    printf "%-40s %s\n" "   └── $(colorize 'yellow' '[S1...]')" "list of services to reload";
 }
 
 function _watch_help(){
     printf "%-25s %s\n" "-w │ --watch" "Watching";
 
-    printf "%-40s %s\n" "   └── $(colorize 'cyan' 'debug')" "Log more details";
+    printf "%-40s %s\n" "   └── $(colorize 'cyan' 'debug')" "log more details";
 }
 
 function _count_help(){
@@ -125,7 +125,7 @@ function _install_help(){
 }
 
 function _help(){
-    printf "%-25s %s\n" "-h │ --help" "show / print help";
+    printf "%-25s %s\n" "-h │ --help" "Print help";
     echo "$(_count_help)";
     echo "$(_install_help)";
     echo
