@@ -105,7 +105,7 @@ function _init_help(){
 function _reload_help(){
     printf "%-25s %s\n" "-r │ --reload" "Reloading";
 
-    printf "%-40s %s\n" "   └── $(colorize 'yellow' '[service, ...]')" "List of services to reload";
+    printf "%-40s %s\n" "   └── $(colorize 'yellow' '[S1...]')" "List of services to reload";
 }
 
 function _watch_help(){
@@ -261,7 +261,7 @@ watch:";
     reload: yes
     file: ${service}.txt.conf.etc
     path: $PWD
-    command: eddy
+    command: eddy -c -r
     counter: 0";
             done
             echo "$eddy_yaml_file" > $eddy_yaml_name;
@@ -297,7 +297,7 @@ watcher {
     path ${eddy_service_data[2]};
     file \"${eddy_service_data[1]}\";
     event write;
-    command \"$0 ${service}\";
+    command \"${eddy_service_data[3]} ${service}\";
     option (stdout, stderr, wait);
 }
 ";
