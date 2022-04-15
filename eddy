@@ -81,6 +81,10 @@ declare -A _reload;
 _reload['flag']=0;
 _reload['args']=0;
 
+declare -A _count;
+_count['flag']=0;
+
+
 docker_compose_file='docker-compose.yml';
 eddy_yaml_name='eddy.yml';
 direvent_config_name='direvent.conf';
@@ -111,8 +115,13 @@ function _watch_help(){
     printf "%-40s %s\n" "   └── $(colorize 'cyan' 'log')" "Log the output";
 }
 
+function _count_help(){
+    printf "%-25s %s\n" "-c │ --count" "Count reloaded services";
+}
+
 function _help(){
     printf "%-25s %s\n" "-h │ --help" "show / print help";
+    echo "$(_count_help)";
     echo
     echo "$(_init_help)"
     echo
@@ -197,6 +206,9 @@ for arg in "${ARGS[@]}"; do
         -R | --reload )
             _reload['flag']=1;
             _reload['args']=${_options_[@]:1}
+        ;;
+        -c | --count )
+            _count['flag']=1;
         ;;
         -h | --help )
             _help;
@@ -332,9 +344,11 @@ if [[ ${_reload['flag']} == 1 ]]; then
             if [[ $arg == $service ]]; then
                 echo "Try to reload: $service"
                 perl -i  -slpe 'BEGIN{$now=reverse localtime()};s/${sn}_last_reload=.*/"${sn}_last_reload=$now"/e' -- -sn=$service .env;
-                counter=$(yq  ".watch.${service}.counter" $eddy_yaml_name);
-                counter=$((++counter));
-                yq -i  ".watch.${service}.counter=${counter}" $eddy_yaml_name;
+                if [[ ${_count['flag']} == 1 ]]; then
+                    counter=$(yq  ".watch.${service}.counter" $eddy_yaml_name);
+                    counter=$((++counter));
+                    yq -i  ".watch.${service}.counter=${counter}" $eddy_yaml_name;
+                fi
             fi
         done
     done
