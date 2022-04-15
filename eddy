@@ -189,11 +189,11 @@ usage: watch and reload docker-compose services
 watch:";
             for service in ${services[*]}; do
                 eddy_yaml_file+="
-          ${service}:
-            reload: yes
-            file: ${service}.txt.conf.etc
-            path: $PWD
-            command: eddy";
+  ${service}:
+    reload: yes
+    file: ${service}.txt.conf.etc
+    path: $PWD
+    command: eddy";
             done
             echo "$eddy_yaml_file" > $eddy_yaml_name;
             md5sum $eddy_yaml_name > ${eddy_yaml_name}.md5
