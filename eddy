@@ -94,7 +94,7 @@ service_to_reload=();
 # help functions
 ################################################################################
 function _init_help(){
-    printf "%-25s %s\n" "-I │ --init" "Initializing";
+    printf "%-25s %s\n" "-i │ --init" "Initializing";
     printf "%-40s %s\n" "   ├── $(colorize 'cyan' 'env')" "Initialize environmental variables";
     printf "%-40s %s\n" "   ├── $(colorize 'cyan' 'yaml')" "Initialize yaml file";
     printf "%-40s %s\n" "   ├── $(colorize 'cyan' 'conf')" "Initialize direvent.conf file";
@@ -193,7 +193,7 @@ for arg in "${ARGS[@]}"; do
     mapfile -t _options_ < <(tr ' ' '\n' <<< "$arg");
 
     case ${_options_[0]} in
-        --init )
+        -i | --init )
             _init['flag']=1;
             _init['args']=${_options_[@]:1}
             _init_call;
