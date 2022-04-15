@@ -76,13 +76,13 @@ _init['args']='';
 docker_compose_file='docker-compose.yml';
 eddy_yaml_name='eddy.yml';
 direvent_config_name='direvent.conf';
-service_to_reload=$1;
+# service_to_reload=$1;
 
 ################################################################################
 # help functions
 ################################################################################
 function _init_help(){
-    printf "%-25s %s\n" "-I │ init" "Initializing";
+    printf "%-25s %s\n" "-I │ --init" "Initializing";
     printf "%-40s %s\n" "   ├── $(colorize 'cyan' 'env')" "Initialize environmental variables";
     printf "%-40s %s\n" "   ├── $(colorize 'cyan' 'yaml')" "Initialize yaml file";
     printf "%-40s %s\n" "   ├── $(colorize 'cyan' 'conf')" "Initialize direvent.conf file";
@@ -102,6 +102,39 @@ if [[ ${#} == 0 ]]; then
 fi
 
 
+################################################################################
+# parsing argument
+################################################################################
+mapfile -t ARGS < <( perl -lne 'print $& while /(?:(?! -)[\s\S])+/ig' <<< "$@");
+if [[ ${#ARGS[@]} == 0 ]]; then
+    _help;
+fi
+
+function _init_call(){
+    for arg in ${_init['args']}; do
+        echo init: $arg;
+    done
+}
+
+for arg in "${ARGS[@]}"; do
+    mapfile -t _options_ < <(tr ' ' '\n' <<< "$arg");
+
+    case ${_options_[0]} in
+        --init )
+            _init['flag']=1;
+            _init['args']=${_options_[@]:1}
+            _init_call;
+        ;;
+        -h | --help )
+            _help;
+        ;;
+        * )
+            echo "unknown options: ${_options_[0]}";
+        ;;
+    esac
+done
+
+exit 0;
 
 mapfile services < <(yq -o json  '.services | keys' $docker_compose_file | jq -r '.[]');
 
