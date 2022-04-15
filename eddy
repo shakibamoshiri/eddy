@@ -109,7 +109,7 @@ function _reload_help(){
 }
 
 function _watch_help(){
-    printf "%-25s %s\n" "-I │ --watch" "Watching";
+    printf "%-25s %s\n" "-w │ --watch" "Watching";
     printf "%-40s %s\n" "   ├── $(colorize 'cyan' 'start')" "Start watching";
 
     printf "%-40s %s\n" "   └── $(colorize 'cyan' 'log')" "Log the output";
@@ -198,7 +198,7 @@ for arg in "${ARGS[@]}"; do
             _init['args']=${_options_[@]:1}
             _init_call;
         ;;
-        --watch )
+        -w | --watch )
             _watch['flag']=1;
             _watch['args']=${_options_[@]:1}
             _watch_call;
