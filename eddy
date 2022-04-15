@@ -369,7 +369,7 @@ if [[ ${_reload['flag']} == 1 ]]; then
     for service in ${services[*]}; do
         for arg in ${_reload['args']}; do
             if [[ $arg == $service ]]; then
-                echo "Try to reload: $service"
+                echo ">>> try to reload: $service"
                 perl -i  -slpe 'BEGIN{$now=reverse localtime()};s/${sn}_last_reload=.*/"${sn}_last_reload=$now"/e' -- -sn=$service .env;
                 if [[ ${_count['flag']} == 1 ]]; then
                     counter=$(yq  ".watch.${service}.counter" $eddy_yaml_name);
