@@ -309,21 +309,14 @@ if [[ ${_reload['flag']} == 1 ]]; then
     done
 fi
 
-exit 0;
-
-
-
-
-
-
-
-
-
 for service in ${services[*]}; do
     if [[ $service_to_reload == $service ]]; then
         echo
         echo "Reload: $service"
         perl -i  -slpe 'BEGIN{$now=reverse localtime()};s/${sn}_last_reload=.*/"${sn}_last_reload=$now"/e' -- -sn=$service .env;
-        docker-compose up -d 2>&1;
+        # docker-compose up -d 2>&1;
+        counter=$(yq  ".watch.${service}.counter" $eddy_yaml_name);
+        counter=$((++counter));
+        yq -i  ".watch.${service}.counter=${counter}" $eddy_yaml_name;
     fi
 done
