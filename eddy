@@ -233,7 +233,8 @@ watch:";
     reload: yes
     file: ${service}.txt.conf.etc
     path: $PWD
-    command: eddy";
+    command: eddy
+    counter: 0";
             done
             echo "$eddy_yaml_file" > $eddy_yaml_name;
             md5sum $eddy_yaml_name > ${eddy_yaml_name}.md5
