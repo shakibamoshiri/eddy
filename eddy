@@ -151,6 +151,32 @@ for arg in "${ARGS[@]}"; do
     esac
 done
 
+
+if [[ ${_init['flag']} == 1 ]]; then
+    for arg in ${_init['args']}; do
+        if [[ $arg == yaml ]]; then
+            eddy_yaml_file='';
+            eddy_yaml_file+=\
+"kind: configuration
+name: eddy
+usage: watch and reload docker-compose services
+
+watch:";
+            for service in ${services[*]}; do
+                eddy_yaml_file+="
+          ${service}:
+            reload: yes
+            file: ${service}.txt.conf.etc
+            path: $PWD
+            command: eddy";
+            done
+            echo "$eddy_yaml_file" > $eddy_yaml_name;
+            echo 'done';
+            exit 0;
+        fi
+    done
+fi
+
 exit 0;
 
 mapfile services < <(yq -o json  '.services | keys' $docker_compose_file | jq -r '.[]');
@@ -175,26 +201,6 @@ if [[ $1 == env ]]; then
     fi
 fi
 
-if [[ $1 == init ]]; then
-    eddy_yaml_file='';
-    eddy_yaml_file+=\
-"kind: configuration
-name: eddy
-usage: watch and reload docker-compose services
-
-watch:";
-    for service in ${services[*]}; do
-        eddy_yaml_file+="
-  ${service}:
-    reload: yes
-    file: ${service}.txt.conf.etc
-    path: $PWD
-    command: eddy";
-    done
-    echo "$eddy_yaml_file" > $eddy_yaml_name;
-    echo "Done, see $eddy_yaml_name";
-    exit 0;
-fi
 
 
 if [[ $1 == 'watcher' ]]; then
