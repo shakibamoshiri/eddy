@@ -78,6 +78,30 @@ eddy_yaml_name='eddy.yml';
 direvent_config_name='direvent.conf';
 service_to_reload=$1;
 
+################################################################################
+# help functions
+################################################################################
+function _init_help(){
+    printf "%-25s %s\n" "-I │ init" "Initializing";
+    printf "%-40s %s\n" "   ├── $(colorize 'cyan' 'env')" "Initialize environmental variables";
+    printf "%-40s %s\n" "   ├── $(colorize 'cyan' 'yaml')" "Initialize yaml file";
+    printf "%-40s %s\n" "   ├── $(colorize 'cyan' 'conf')" "Initialize direvent.conf file";
+
+    printf "%-40s %s\n" "   └── $(colorize 'cyan' 'apply')" "Adding environmental variables to docker-compose.yml";
+}
+
+function _help(){
+    printf "%-25s %s\n" "-h │ --help" "show / print help";
+    echo
+    echo "$(_init_help)"
+    exit 0;
+}
+
+if [[ ${#} == 0 ]]; then
+    _help;
+fi
+
+
 
 mapfile services < <(yq -o json  '.services | keys' $docker_compose_file | jq -r '.[]');
 
