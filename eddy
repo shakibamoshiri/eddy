@@ -239,6 +239,28 @@ watcher {
     done
 fi
 
+
+if [[ ${_init['flag']} == 1 ]]; then
+    for arg in ${_init['args']}; do
+        if [[ $arg == 'apply' ]]; then
+            for service in ${services[*]}; do
+                # yq ".services.nginx.environment["name"]="${name}"" $docker_compose_file
+                # yq '.services.'"${service}"'.environment["'"${service}_last_reload"'"]="'"\${${service}_last_reload}"'"' $docker_compose_file
+                last_reload_exist=$(yq '.services.'"${service}"'.environment["'"${service}_last_reload"'"]' $docker_compose_file);
+                echo -n "${service}_last_reload"
+                if [[ $last_reload_exist == 'null' ]]; then
+                    yq -i '.services.'"${service}"'.environment["'"${service}_last_reload"'"]="'"\${${service}_last_reload}"'"' $docker_compose_file;
+                    echo ' is null, added'
+                else
+                    echo ' already set, skipped'
+                fi
+            done
+            exit 0;
+        fi
+    done
+fi
+
+
 exit 0;
 
 
@@ -247,21 +269,6 @@ exit 0;
 
 
 
-if [[ $1 == apply ]]; then
-    for service in ${services[*]}; do
-        # yq ".services.nginx.environment["name"]="${name}"" $docker_compose_file
-        # yq '.services.'"${service}"'.environment["'"${service}_last_reload"'"]="'"\${${service}_last_reload}"'"' $docker_compose_file
-        last_reload_exist=$(yq '.services.'"${service}"'.environment["'"${service}_last_reload"'"]' $docker_compose_file);
-        echo -n "environment: ${service}_last_reload"
-        if [[ $last_reload_exist == 'null' ]]; then
-            yq -i '.services.'"${service}"'.environment["'"${service}_last_reload"'"]="'"\${${service}_last_reload}"'"' $docker_compose_file;
-            echo ' is null, added'
-        else
-            echo ' already set, skipped'
-        fi
-    done
-    exit 0;
-fi
 
 if [[ $1 == start ]]; then
     docker-compose -f $docker_compose_file up -d
