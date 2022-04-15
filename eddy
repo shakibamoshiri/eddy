@@ -1,0 +1,108 @@
+#!/bin/bash
+
+docker_compose_file='docker-compose.yml';
+eddy_yaml_name='eddy.yml';
+direvent_config_name='direvent.conf';
+service_to_reload=$1;
+
+
+mapfile services < <(yq -o json  '.services | keys' $docker_compose_file | jq -r '.[]');
+
+for service in ${services[*]}; do
+    if grep '-' <<< $service; then
+        echo "$service contains - , which is not valid!";
+        echo 'please update your service: $service name';
+        exit 1;
+    fi
+done
+
+if [[ $1 == env ]]; then
+     if ! [[ -f eddy.env ]]; then
+        for service in ${services[*]}; do
+            echo "${service}_last_reload=0"
+        done > eddy.env
+    else
+        echo 'file eddy.env exists'
+        echo 'rm -f eddy.env if you need to update'
+        exit 0;
+    fi
+fi
+
+if [[ $1 == init ]]; then
+    eddy_yaml_file='';
+    eddy_yaml_file+=\
+"kind: configuration
+name: eddy
+usage: watch and reload docker-compose services
+
+watch:";
+    for service in ${services[*]}; do
+        eddy_yaml_file+="
+  ${service}:
+    reload: yes
+    file: ${service}.txt.conf.etc
+    path: $PWD
+    command: eddy";
+    done
+    echo "$eddy_yaml_file" > $eddy_yaml_name;
+    echo "Done, see $eddy_yaml_name";
+    exit 0;
+fi
+
+
+if [[ $1 == 'watcher' ]]; then
+    eddy_config_file=$(yq $eddy_yaml_name);
+    direvent_config_file='';
+    direvent_config_file+=\
+"syslog {
+    facility local0;
+    tag "direvent";
+    print-priority yes;
+}
+";
+    for service in ${services[*]}; do
+        mapfile -t eddy_service_data   < <(yq ".watch.${service}.reload, .watch.${service}.file, .watch.${service}.path, .watch.${service}.command" $eddy_yaml_name);
+        direvent_config_file+="
+watcher {
+    path ${eddy_service_data[2]};
+    file \"${eddy_service_data[1]}\";
+    event write;
+    command \"$0 ${service}\";
+    option (stdout, stderr, wait);
+}
+";
+    done
+    echo "$direvent_config_file" > $direvent_config_name;
+    echo "Done, you can see $direvent_config_name";
+    exit 0;
+fi
+
+if [[ $1 == apply ]]; then
+    for service in ${services[*]}; do
+        # yq ".services.nginx.environment["name"]="${name}"" $docker_compose_file
+        # yq '.services.'"${service}"'.environment["'"${service}_last_reload"'"]="'"\${${service}_last_reload}"'"' $docker_compose_file
+        last_reload_exist=$(yq '.services.'"${service}"'.environment["'"${service}_last_reload"'"]' $docker_compose_file);
+        echo -n "environment: ${service}_last_reload"
+        if [[ $last_reload_exist == 'null' ]]; then
+            yq -i '.services.'"${service}"'.environment["'"${service}_last_reload"'"]="'"\${${service}_last_reload}"'"' $docker_compose_file;
+            echo ' is null, added'
+        else
+            echo ' already set, skipped'
+        fi
+    done
+    exit 0;
+fi
+
+if [[ $1 == start ]]; then
+    docker-compose -f $docker_compose_file up -d
+    direvent -f direvent.conf
+fi
+
+for service in ${services[*]}; do
+    if [[ $service_to_reload == $service ]]; then
+        echo
+        echo "Reload: $service"
+        perl -i  -slpe 'BEGIN{$now=reverse localtime()};s/${sn}_last_reload=.*/"${sn}_last_reload=$now"/e' -- -sn=$service .env;
+        docker-compose up -d 2>&1;
+    fi
+done
