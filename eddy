@@ -77,6 +77,10 @@ declare -A _watch;
 _watch['flag']=0;
 _watch['args']='';
 
+declare -A _reload;
+_reload['flag']=0;
+_reload['args']=0;
+
 docker_compose_file='docker-compose.yml';
 eddy_yaml_name='eddy.yml';
 direvent_config_name='direvent.conf';
@@ -94,10 +98,15 @@ function _init_help(){
     printf "%-40s %s\n" "   └── $(colorize 'cyan' 'apply')" "Adding environmental variables to docker-compose.yml";
 }
 
+function _reload_help(){
+    printf "%-25s %s\n" "-L │ --reload" "Reloading";
+
+    printf "%-40s %s\n" "   └── $(colorize 'cyan' 'count')" "Count reloaded service";
+}
+
 function _watch_help(){
     printf "%-25s %s\n" "-I │ --watch" "Watching";
     printf "%-40s %s\n" "   ├── $(colorize 'cyan' 'start')" "Start watching";
-    printf "%-40s %s\n" "   ├── $(colorize 'cyan' 'count')" "Update counter";
 
     printf "%-40s %s\n" "   └── $(colorize 'cyan' 'log')" "Log the output";
 }
@@ -108,6 +117,8 @@ function _help(){
     echo "$(_init_help)"
     echo
     echo "$(_watch_help)";
+    echo
+    echo "$(_reload_help)";
     exit 0;
 }
 
@@ -183,12 +194,16 @@ for arg in "${ARGS[@]}"; do
             _watch['args']=${_options_[@]:1}
             _watch_call;
         ;;
+        -R | --reload )
+            _reload['flag']=1;
+            _reload['args']=${_options_[@]:1}
+        ;;
         -h | --help )
             _help;
         ;;
         * )
-            echo "Manual reloading";
-            service_to_reload=${@:1};
+            echo "unknown options: ${_options_[0]}";
+            exit 0;
         ;;
     esac
 done
@@ -305,26 +320,24 @@ fi
 if [[ ${_watch['flag']} == 1 ]]; then
     for arg in ${_watch['args']}; do
         if [[ $arg == start ]]; then
-            echo 'docker-compose -f $docker_compose_file up -d'
-            echo 'direvent -f direvent.conf'
+            direvent -f direvent.conf;
         fi
     done
 fi
 
-for service in ${services[*]}; do
-    for arg in ${service_to_reload[*]}; do
-        if [[ $arg == $service ]]; then
-            if [[ ${_watch['flag']} == 1 ]]; then
-                echo
+
+if [[ ${_reload['flag']} == 1 ]]; then
+    for service in ${services[*]}; do
+        for arg in ${_reload['args']}; do
+            if [[ $arg == $service ]]; then
+                echo "Try to reload: $service"
+                perl -i  -slpe 'BEGIN{$now=reverse localtime()};s/${sn}_last_reload=.*/"${sn}_last_reload=$now"/e' -- -sn=$service .env;
+                counter=$(yq  ".watch.${service}.counter" $eddy_yaml_name);
+                counter=$((++counter));
+                yq -i  ".watch.${service}.counter=${counter}" $eddy_yaml_name;
             fi
-
-            echo "Try to reload: $service"
-            perl -i  -slpe 'BEGIN{$now=reverse localtime()};s/${sn}_last_reload=.*/"${sn}_last_reload=$now"/e' -- -sn=$service .env;
-            counter=$(yq  ".watch.${service}.counter" $eddy_yaml_name);
-            counter=$((++counter));
-            yq -i  ".watch.${service}.counter=${counter}" $eddy_yaml_name;
-        fi
+        done
     done
-done
 
-docker-compose up -d 2>&1;
+    docker-compose up -d 2>&1;
+fi
