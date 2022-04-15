@@ -101,7 +101,7 @@ function _init_help(){
 function _reload_help(){
     printf "%-25s %s\n" "-L │ --reload" "Reloading";
 
-    printf "%-40s %s\n" "   └── $(colorize 'cyan' 'count')" "Count reloaded service";
+    printf "%-40s %s\n" "   └── $(colorize 'yellow' '[service, ...]')" "List of services to reload";
 }
 
 function _watch_help(){
