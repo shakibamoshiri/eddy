@@ -111,19 +111,20 @@ if [[ ${#ARGS[@]} == 0 ]]; then
 fi
 
 function _init_call(){
+    mapfile services < <(yq -o json  '.services | keys' $docker_compose_file | jq -r '.[]');
     for arg in ${_init['args']}; do
         case $arg in
             env )
-                echo "$PS4 setup environmental variables";
+                echo "Initialize environmental variables";
             ;;
             yaml )
-                echo "$PS4 setup yaml file";
+                echo "Initialize yaml file";
             ;;
             conf )
-                echo "$PS4 setup direvent.conf file";
+                echo "Create direvent.conf file";
             ;;
             apply )
-                echo "$PS4 add environmental variables to docker-compose.yml file";
+                echo "Add environmental variables to docker-compose.yml file";
             ;;
             * )
                 echo "unknown --init $arg"
@@ -154,6 +155,30 @@ done
 
 if [[ ${_init['flag']} == 1 ]]; then
     for arg in ${_init['args']}; do
+        if [[ $arg == env ]]; then
+            for service in ${services[*]}; do
+                if grep '-' <<< $service; then
+                    echo "$service contains - , which is not valid!";
+                    echo 'please update your service: $service name';
+                    exit 1;
+                fi
+            done
+
+             if ! [[ -f eddy.env ]]; then
+                for service in ${services[*]}; do
+                    echo "${service}_last_reload=0"
+                done > eddy.env
+            else
+                echo 'file eddy.env exists'
+                echo 'rm -f eddy.env if you need to update'
+                exit 0;
+            fi
+        fi
+    done
+fi
+
+if [[ ${_init['flag']} == 1 ]]; then
+    for arg in ${_init['args']}; do
         if [[ $arg == yaml ]]; then
             eddy_yaml_file='';
             eddy_yaml_file+=\
@@ -179,27 +204,8 @@ fi
 
 exit 0;
 
-mapfile services < <(yq -o json  '.services | keys' $docker_compose_file | jq -r '.[]');
 
-for service in ${services[*]}; do
-    if grep '-' <<< $service; then
-        echo "$service contains - , which is not valid!";
-        echo 'please update your service: $service name';
-        exit 1;
-    fi
-done
 
-if [[ $1 == env ]]; then
-     if ! [[ -f eddy.env ]]; then
-        for service in ${services[*]}; do
-            echo "${service}_last_reload=0"
-        done > eddy.env
-    else
-        echo 'file eddy.env exists'
-        echo 'rm -f eddy.env if you need to update'
-        exit 0;
-    fi
-fi
 
 
 
