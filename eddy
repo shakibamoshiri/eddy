@@ -73,6 +73,10 @@ declare -A _init;
 _init['flag']=0;
 _init['args']='';
 
+declare -A _reload;
+_reload['flag']=0;
+_reload['args']='';
+
 docker_compose_file='docker-compose.yml';
 eddy_yaml_name='eddy.yml';
 direvent_config_name='direvent.conf';
@@ -90,10 +94,20 @@ function _init_help(){
     printf "%-40s %s\n" "   └── $(colorize 'cyan' 'apply')" "Adding environmental variables to docker-compose.yml";
 }
 
+function _reload_help(){
+    printf "%-25s %s\n" "-I │ --reload" "Reloading";
+    printf "%-40s %s\n" "   ├── $(colorize 'cyan' 'start')" "Start watching";
+    printf "%-40s %s\n" "   ├── $(colorize 'cyan' 'count')" "Update counter";
+
+    printf "%-40s %s\n" "   └── $(colorize 'cyan' 'log')" "Log the output";
+}
+
 function _help(){
     printf "%-25s %s\n" "-h │ --help" "show / print help";
     echo
     echo "$(_init_help)"
+    echo
+    echo "$(_reload_help)";
     exit 0;
 }
 
@@ -134,6 +148,27 @@ function _init_call(){
     done
 }
 
+function _reload_call(){
+    if [[ ${_reload['args']} == '' ]]; then
+        _reload_help;
+    fi
+
+    for arg in ${_reload['args']}; do
+        case $arg in
+            start )
+                echo "Start watching";
+            ;;
+            count )
+                echo "Count any reload";
+            ;;
+            * )
+                echo "unknown --reload $arg"
+                exit 1;
+            ;;
+        esac
+    done
+}
+
 for arg in "${ARGS[@]}"; do
     mapfile -t _options_ < <(tr ' ' '\n' <<< "$arg");
 
@@ -142,6 +177,11 @@ for arg in "${ARGS[@]}"; do
             _init['flag']=1;
             _init['args']=${_options_[@]:1}
             _init_call;
+        ;;
+        --reload )
+            _reload['flag']=1;
+            _reload['args']=${_options_[@]:1}
+            _reload_call;
         ;;
         -h | --help )
             _help;
@@ -260,6 +300,14 @@ if [[ ${_init['flag']} == 1 ]]; then
     done
 fi
 
+if [[ ${_reload['flag']} == 1 ]]; then
+    for arg in ${_reload['args']}; do
+        if [[ $arg == start ]]; then
+            echo 'docker-compose -f $docker_compose_file up -d'
+            echo 'direvent -f direvent.conf'
+        fi
+    done
+fi
 
 exit 0;
 
@@ -270,10 +318,6 @@ exit 0;
 
 
 
-if [[ $1 == start ]]; then
-    docker-compose -f $docker_compose_file up -d
-    direvent -f direvent.conf
-fi
 
 for service in ${services[*]}; do
     if [[ $service_to_reload == $service ]]; then
