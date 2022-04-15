@@ -312,6 +312,13 @@ if [[ ${_init['flag']} == 1 ]]; then
 ";
             for service in ${services[*]}; do
                 mapfile -t eddy_service_data   < <(yq ".watch.${service}.reload, .watch.${service}.file, .watch.${service}.path, .watch.${service}.command" $eddy_yaml_name);
+                mapfile -t -d ' ' user_cmd <<< ${eddy_service_data[3]};
+                if which ${user_cmd[0]} > /dev/null 2>&1; then
+                    eddy_service_data[3]="$(which ${user_cmd[0]}) $(tr -d '\n' <<< ${user_cmd[@]:1})";
+                else
+                    echo "${user_cmd[0]} not found";
+                    exit 1;
+                fi
                 direvent_config_file+="
 watcher {
     path ${eddy_service_data[2]};
