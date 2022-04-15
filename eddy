@@ -103,7 +103,7 @@ function _init_help(){
 }
 
 function _reload_help(){
-    printf "%-25s %s\n" "-L │ --reload" "Reloading";
+    printf "%-25s %s\n" "-r │ --reload" "Reloading";
 
     printf "%-40s %s\n" "   └── $(colorize 'yellow' '[service, ...]')" "List of services to reload";
 }
@@ -182,7 +182,7 @@ function _watch_call(){
                 echo "Count any reload";
             ;;
             * )
-                echo "unknown --reload $arg"
+                echo "unknown --watch $arg"
                 exit 1;
             ;;
         esac
@@ -203,7 +203,7 @@ for arg in "${ARGS[@]}"; do
             _watch['args']=${_options_[@]:1}
             _watch_call;
         ;;
-        -R | --reload )
+        -r | --reload )
             _reload['flag']=1;
             _reload['args']=${_options_[@]:1}
         ;;
