@@ -112,7 +112,24 @@ fi
 
 function _init_call(){
     for arg in ${_init['args']}; do
-        echo init: $arg;
+        case $arg in
+            env )
+                echo "$PS4 setup environmental variables";
+            ;;
+            yaml )
+                echo "$PS4 setup yaml file";
+            ;;
+            conf )
+                echo "$PS4 setup direvent.conf file";
+            ;;
+            apply )
+                echo "$PS4 add environmental variables to docker-compose.yml file";
+            ;;
+            * )
+                echo "unknown --init $arg"
+                exit 1;
+            ;;
+        esac
     done
 }
 
