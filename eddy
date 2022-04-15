@@ -196,7 +196,38 @@ watch:";
             command: eddy";
             done
             echo "$eddy_yaml_file" > $eddy_yaml_name;
-            echo 'done';
+            md5sum $eddy_yaml_name > $eddy_yaml_name.md5
+            exit 0;
+        fi
+    done
+fi
+
+
+if [[ ${_init['flag']} == 1 ]]; then
+    for arg in ${_init['args']}; do
+        if [[ $arg == 'conf' ]]; then
+            eddy_config_file=$(yq $eddy_yaml_name);
+            direvent_config_file='';
+            direvent_config_file+=\
+"syslog {
+    facility local0;
+    tag "direvent";
+    print-priority yes;
+}
+";
+            for service in ${services[*]}; do
+                mapfile -t eddy_service_data   < <(yq ".watch.${service}.reload, .watch.${service}.file, .watch.${service}.path, .watch.${service}.command" $eddy_yaml_name);
+                direvent_config_file+="
+watcher {
+    path ${eddy_service_data[2]};
+    file \"${eddy_service_data[1]}\";
+    event write;
+    command \"$0 ${service}\";
+    option (stdout, stderr, wait);
+}
+";
+            done
+            echo "$direvent_config_file" > $direvent_config_name;
             exit 0;
         fi
     done
@@ -209,32 +240,6 @@ exit 0;
 
 
 
-if [[ $1 == 'watcher' ]]; then
-    eddy_config_file=$(yq $eddy_yaml_name);
-    direvent_config_file='';
-    direvent_config_file+=\
-"syslog {
-    facility local0;
-    tag "direvent";
-    print-priority yes;
-}
-";
-    for service in ${services[*]}; do
-        mapfile -t eddy_service_data   < <(yq ".watch.${service}.reload, .watch.${service}.file, .watch.${service}.path, .watch.${service}.command" $eddy_yaml_name);
-        direvent_config_file+="
-watcher {
-    path ${eddy_service_data[2]};
-    file \"${eddy_service_data[1]}\";
-    event write;
-    command \"$0 ${service}\";
-    option (stdout, stderr, wait);
-}
-";
-    done
-    echo "$direvent_config_file" > $direvent_config_name;
-    echo "Done, you can see $direvent_config_name";
-    exit 0;
-fi
 
 if [[ $1 == apply ]]; then
     for service in ${services[*]}; do
