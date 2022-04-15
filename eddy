@@ -80,7 +80,7 @@ _reload['args']='';
 docker_compose_file='docker-compose.yml';
 eddy_yaml_name='eddy.yml';
 direvent_config_name='direvent.conf';
-# service_to_reload=$1;
+service_to_reload=();
 
 ################################################################################
 # help functions
@@ -124,8 +124,8 @@ if [[ ${#ARGS[@]} == 0 ]]; then
     _help;
 fi
 
+mapfile services < <(yq -o json  '.services | keys' $docker_compose_file | jq -r '.[]');
 function _init_call(){
-    mapfile services < <(yq -o json  '.services | keys' $docker_compose_file | jq -r '.[]');
     for arg in ${_init['args']}; do
         case $arg in
             env )
@@ -187,7 +187,8 @@ for arg in "${ARGS[@]}"; do
             _help;
         ;;
         * )
-            echo "unknown options: ${_options_[0]}";
+            echo "Manual reloading";
+            service_to_reload=${@:1};
         ;;
     esac
 done
@@ -311,13 +312,19 @@ if [[ ${_reload['flag']} == 1 ]]; then
 fi
 
 for service in ${services[*]}; do
-    if [[ $service_to_reload == $service ]]; then
-        echo
-        echo "Reload: $service"
-        perl -i  -slpe 'BEGIN{$now=reverse localtime()};s/${sn}_last_reload=.*/"${sn}_last_reload=$now"/e' -- -sn=$service .env;
-        # docker-compose up -d 2>&1;
-        counter=$(yq  ".watch.${service}.counter" $eddy_yaml_name);
-        counter=$((++counter));
-        yq -i  ".watch.${service}.counter=${counter}" $eddy_yaml_name;
-    fi
+    for arg in ${service_to_reload[*]}; do
+        if [[ $arg == $service ]]; then
+            if [[ ${_reload['flag']} == 1 ]]; then
+                echo
+            fi
+
+            echo "Try to reload: $service"
+            perl -i  -slpe 'BEGIN{$now=reverse localtime()};s/${sn}_last_reload=.*/"${sn}_last_reload=$now"/e' -- -sn=$service .env;
+            counter=$(yq  ".watch.${service}.counter" $eddy_yaml_name);
+            counter=$((++counter));
+            yq -i  ".watch.${service}.counter=${counter}" $eddy_yaml_name;
+        fi
+    done
 done
+
+docker-compose up -d 2>&1;
