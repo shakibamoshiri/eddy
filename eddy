@@ -84,11 +84,13 @@ _reload['args']=0;
 declare -A _count;
 _count['flag']=0;
 
+declare -A _install;
+_install['flag']=0;
 
-docker_compose_file='docker-compose.yml';
-eddy_yaml_name='eddy.yml';
-direvent_config_name='direvent.conf';
-service_to_reload=();
+readonly docker_compose_file='docker-compose.yml';
+readonly eddy_yaml_name='eddy.yml';
+readonly direvent_config_name='direvent.conf';
+readonly this_cli_name='eddy';
 
 ################################################################################
 # help functions
@@ -119,9 +121,14 @@ function _count_help(){
     printf "%-25s %s\n" "-c │ --count" "Count reloaded services";
 }
 
+function _install_help(){
+    printf "%-25s %s\n" "   │ --install" "Install the script";
+}
+
 function _help(){
     printf "%-25s %s\n" "-h │ --help" "show / print help";
     echo "$(_count_help)";
+    echo "$(_install_help)";
     echo
     echo "$(_init_help)"
     echo
@@ -144,7 +151,6 @@ if [[ ${#ARGS[@]} == 0 ]]; then
     _help;
 fi
 
-mapfile services < <(yq -o json  '.services | keys' $docker_compose_file | jq -r '.[]');
 function _init_call(){
     for arg in ${_init['args']}; do
         case $arg in
@@ -210,6 +216,9 @@ for arg in "${ARGS[@]}"; do
         -c | --count )
             _count['flag']=1;
         ;;
+        --install )
+            _install['flag']=1;
+        ;;
         -h | --help )
             _help;
         ;;
@@ -220,6 +229,17 @@ for arg in "${ARGS[@]}"; do
     esac
 done
 
+if [[ ${_install['flag']} == 1 ]]; then
+    chmod a+x ./eddy;
+    sudo install ./$this_cli_name -t /usr/local/bin/
+    which $this_cli_name;
+    exit $?;
+fi
+
+################################################################################
+# logic
+################################################################################
+mapfile services < <(yq -o json  '.services | keys' $docker_compose_file | jq -r '.[]');
 
 if [[ ${_init['flag']} == 1 ]]; then
     for arg in ${_init['args']}; do
