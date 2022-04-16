@@ -322,7 +322,7 @@ if [[ ${_init['flag']} == 1 ]]; then
 watcher {
     path ${eddy_service_data[2]};
     file \"${eddy_service_data[1]}\";
-    event write;
+    event attrib;
     command \"${eddy_service_data[3]} ${service}\";
     option (stdout, stderr, wait);
     environ {
