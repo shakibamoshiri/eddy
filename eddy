@@ -87,6 +87,10 @@ _count['flag']=0;
 declare -A _install;
 _install['flag']=0;
 
+declare -A _event;
+_event['flag']=0;
+_event['args']='attrib';
+
 readonly docker_compose_file='docker-compose.yml';
 readonly eddy_yaml_name='eddy.yml';
 readonly direvent_config_name='direvent.conf';
@@ -120,6 +124,16 @@ function _watch_help(){
     printf "%-40s %s\n" "   └── $(colorize 'cyan' 'debug')" "log more details";
 }
 
+function _event_help(){
+    printf "%-25s %s\n" "-e │ --event" "Events to watch";
+    printf "%-40s %s\n" "   ├── $(colorize 'cyan' 'create')" "when a file is created";
+    printf "%-40s %s\n" "   ├── $(colorize 'cyan' 'delete')" "when a file is deleted";
+    printf "%-40s %s\n" "   ├── $(colorize 'cyan' 'write')" "when a file is written to";
+    printf "%-40s %s\n" "   ├── $(colorize 'cyan' 'change')" "when a file is modified";
+
+    printf "%-40s %s\n" "   └── $(colorize 'cyan' 'attrib')" "when a file attribute has been changed (default)";
+}
+
 function _count_help(){
     printf "%-25s %s\n" "-c │ --count" "Count reloaded services";
 }
@@ -134,6 +148,8 @@ function _help(){
     echo "$(_install_help)";
     echo
     echo "$(_init_help)"
+    echo
+    echo "$(_event_help)";
     echo
     echo "$(_watch_help)";
     echo
@@ -194,6 +210,10 @@ function _watch_call(){
     done
 }
 
+function _event_call(){
+    _event['args']=$(perl -lpe 's/\s+/,/g' <<< ${_options_[@]:1});
+}
+
 for arg in "${ARGS[@]}"; do
     mapfile -t _options_ < <(tr ' ' '\n' <<< "$arg");
 
@@ -207,6 +227,11 @@ for arg in "${ARGS[@]}"; do
             _watch['flag']=1;
             _watch['args']=${_options_[@]:1}
             _watch_call;
+        ;;
+        -e | --event )
+            _event['flag']=1;
+            _event['args']=${_options_[@]:1};
+            _event_call;
         ;;
         -r | --reload )
             _reload['flag']=1;
@@ -322,7 +347,7 @@ if [[ ${_init['flag']} == 1 ]]; then
 watcher {
     path ${eddy_service_data[2]};
     file \"${eddy_service_data[1]}\";
-    event attrib;
+    event (${_event['args']});
     command \"${eddy_service_data[3]} ${service}\";
     option (stdout, stderr, wait);
     environ {
