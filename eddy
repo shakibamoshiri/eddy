@@ -91,6 +91,7 @@ readonly docker_compose_file='docker-compose.yml';
 readonly eddy_yaml_name='eddy.yml';
 readonly direvent_config_name='direvent.conf';
 readonly this_cli_name='eddy';
+request_mode=${request_mode:-'manual'}
 
 ################################################################################
 # help functions
@@ -112,6 +113,8 @@ function _reload_help(){
 
 function _watch_help(){
     printf "%-25s %s\n" "-w │ --watch" "Watching";
+    printf "%-40s %s\n" "   ├── $(colorize 'cyan' '')" "no option == no output mode";
+    printf "%-40s %s\n" "   ├── $(colorize 'cyan' 'log')" "brief output";
 
     printf "%-40s %s\n" "   └── $(colorize 'cyan' 'debug')" "log more details";
 }
@@ -176,6 +179,9 @@ function _init_call(){
 function _watch_call(){
     for arg in ${_watch['args']}; do
         case $arg in
+            log )
+                echo "Start watching in log mode";
+            ;;
             debug )
                 echo "Start watching in debug mode";
             ;;
@@ -273,7 +279,7 @@ watch:";
     reload: yes
     file: ${service}.txt.conf.etc
     path: $PWD
-    command: eddy -c -r
+    command: eddy --count --reload
     counter: 0";
             done
             echo "$eddy_yaml_file" > $eddy_yaml_name;
@@ -318,6 +324,9 @@ watcher {
     event write;
     command \"${eddy_service_data[3]} ${service}\";
     option (stdout, stderr, wait);
+    environ {
+        set \"request_mode=watch\";
+    }
 }
 ";
             done
@@ -349,11 +358,19 @@ if [[ ${_init['flag']} == 1 ]]; then
 fi
 
 if [[ ${_watch['flag']} == 1 ]]; then
-    if [[ ${_watch['args']} == 'debug' ]]; then
-        direvent -d -f direvent.conf;
-    else
-        direvent -f direvent.conf;
-    fi
+    case ${_watch['args']} in
+        log )
+            direvent -f ./direvent.conf;
+        ;;
+        debug )
+            direvent -d -f ./direvent.conf;
+        ;;
+        * )
+            echo "Start watching in no output mode";
+            direvent -f ./direvent.conf > /dev/null 2>&1;
+            
+        ;;
+    esac
 fi
 
 
@@ -361,6 +378,9 @@ if [[ ${_reload['flag']} == 1 ]]; then
     for service in ${services[*]}; do
         for arg in ${_reload['args']}; do
             if [[ $arg == $service ]]; then
+                if [[ $request_mode == 'watch' ]]; then
+                    echo
+                fi
                 echo ">>> try to reload: $service"
                 perl -i  -slpe 'BEGIN{$now=reverse localtime()};s/${sn}_last_reload=.*/"${sn}_last_reload=$now"/e' -- -sn=$service .env;
                 if [[ ${_count['flag']} == 1 ]]; then
