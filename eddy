@@ -92,7 +92,7 @@ readonly eddy_yaml_name='eddy.yml';
 readonly direvent_config_name='direvent.conf';
 readonly this_cli_name='eddy';
 request_mode=${request_mode:-'manual'}
-project_root=${project_root:?"project_root not defined!"};
+project_root=${project_root:-"$PWD"};
 
 ################################################################################
 # help functions
