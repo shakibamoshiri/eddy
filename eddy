@@ -92,6 +92,7 @@ readonly eddy_yaml_name='eddy.yml';
 readonly direvent_config_name='direvent.conf';
 readonly this_cli_name='eddy';
 request_mode=${request_mode:-'manual'}
+project_root=${project_root:-"project_root not defined!"};
 
 ################################################################################
 # help functions
@@ -237,7 +238,7 @@ fi
 ################################################################################
 # logic
 ################################################################################
-mapfile services < <(yq -o json  '.services | keys' $docker_compose_file | jq -r '.[]');
+mapfile services < <(yq -o json  '.services | keys' ${project_root}/${docker_compose_file} | jq -r '.[]');
 
 if [[ ${_init['flag']} == 1 ]]; then
     for arg in ${_init['args']}; do
@@ -326,6 +327,7 @@ watcher {
     option (stdout, stderr, wait);
     environ {
         set \"request_mode=watch\";
+        set \"project_root=$(pwd)\";
     }
 }
 ";
@@ -360,21 +362,21 @@ fi
 if [[ ${_watch['flag']} == 1 ]]; then
     case ${_watch['args']} in
         log )
-            direvent -f ./direvent.conf;
+            direvent -f ./$direvent_config_name
         ;;
         debug )
-            direvent -d -f ./direvent.conf;
+            direvent -d -f ./$direvent_config_name
         ;;
         * )
             echo "Start watching in no output mode";
-            direvent -f ./direvent.conf > /dev/null 2>&1;
-            
+            direvent -f ./$direvent_config_name > /dev/null 2>&1;
         ;;
     esac
 fi
 
 
 if [[ ${_reload['flag']} == 1 ]]; then
+    cd $project_root;
     for service in ${services[*]}; do
         for arg in ${_reload['args']}; do
             if [[ $arg == $service ]]; then
@@ -391,6 +393,5 @@ if [[ ${_reload['flag']} == 1 ]]; then
             fi
         done
     done
-
-    docker-compose up -d 2>&1;
+    docker-compose -f $docker_compose_file up -d 2>&1;
 fi
