@@ -91,6 +91,7 @@ readonly docker_compose_file='docker-compose.yml';
 readonly eddy_yaml_name='eddy.yml';
 readonly direvent_config_name='direvent.conf';
 readonly this_cli_name='eddy';
+request_mode=${request_mode:-'manual'}
 
 ################################################################################
 # help functions
@@ -112,6 +113,8 @@ function _reload_help(){
 
 function _watch_help(){
     printf "%-25s %s\n" "-w │ --watch" "Watching";
+    printf "%-40s %s\n" "   ├── $(colorize 'cyan' 'log')" "brief output";
+    printf "%-40s %s\n" "   ├── $(colorize 'cyan' 'log2')" "docker-compose output";
 
     printf "%-40s %s\n" "   └── $(colorize 'cyan' 'debug')" "log more details";
 }
@@ -176,6 +179,12 @@ function _init_call(){
 function _watch_call(){
     for arg in ${_watch['args']}; do
         case $arg in
+            log )
+                echo "Start watching in log mode";
+            ;;
+            log2 )
+                echo "Start watching in log2 mode";
+            ;;
             debug )
                 echo "Start watching in debug mode";
             ;;
@@ -349,10 +358,14 @@ if [[ ${_init['flag']} == 1 ]]; then
 fi
 
 if [[ ${_watch['flag']} == 1 ]]; then
-    if [[ ${_watch['args']} == 'debug' ]]; then
-        direvent -d -f direvent.conf;
-    else
-        direvent -f direvent.conf;
+    if [[ ${_watch['args']} == 'log' ]]; then
+        direvent -f ./direvent.conf 2>&1 | grep -i 'done';
+    elif [[ ${_watch['args']} == 'log2' ]]; then
+        direvent -f ./direvent.conf 2>&1;
+    elif [[ ${_watch['args']} == 'debug' ]]; then
+        direvent -d -f ./direvent.conf;
+    elif [[ ${_watch['args']} == '' ]]; then
+        direvent -f ./direvent.conf > /dev/null 2>&1;
     fi
 fi
 
