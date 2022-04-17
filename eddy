@@ -296,7 +296,7 @@ if [[ ${_init['flag']} == 1 ]]; then
             eddy_yaml_file+=\
 "kind: configuration
 name: eddy
-usage: watch and reload docker-compose services
+description: watch and reload docker-compose or any others
 
 watch:";
             for service in ${services[*]}; do
@@ -305,7 +305,7 @@ watch:";
     reload: yes
     file: ${service}.txt.conf.etc
     path: $PWD
-    command: eddy --count --reload
+    command: default
     counter: 0";
             done
             echo "$eddy_yaml_file" > $eddy_yaml_name;
@@ -348,7 +348,7 @@ watcher {
     path ${eddy_service_data[2]};
     file \"${eddy_service_data[1]}\";
     event (${_event['args']});
-    command \"${eddy_service_data[3]} ${service}\";
+    command \"$0 --count --reload ${service}\";
     option (stdout, stderr, wait);
     environ {
         set \"request_mode=watch\";
@@ -401,6 +401,7 @@ fi
 
 
 if [[ ${_reload['flag']} == 1 ]]; then
+    command_mode='default';
     cd $project_root;
     for service in ${services[*]}; do
         for arg in ${_reload['args']}; do
@@ -408,15 +409,28 @@ if [[ ${_reload['flag']} == 1 ]]; then
                 if [[ $request_mode == 'watch' ]]; then
                     echo
                 fi
-                echo ">>> try to reload: $service"
-                perl -i  -slpe 'BEGIN{$now=reverse localtime()};s/${sn}_last_reload=.*/"${sn}_last_reload=$now"/e' -- -sn=$service .env;
-                if [[ ${_count['flag']} == 1 ]]; then
-                    counter=$(yq  ".watch.${service}.counter" $eddy_yaml_name);
-                    counter=$((++counter));
-                    yq -i  ".watch.${service}.counter=${counter}" $eddy_yaml_name;
+
+                echo ">>> service: $service"
+                command=$(yq ".watch.${service}.command" $eddy_yaml_name);
+                if [[ $command == 'default' ]]; then
+                    perl -i  -slpe 'BEGIN{$now=reverse localtime()};s/${sn}_last_reload=.*/"${sn}_last_reload=$now"/e' -- -sn=$service .env;
+                    if [[ ${_count['flag']} == 1 ]]; then
+                        counter=$(yq  ".watch.${service}.counter" $eddy_yaml_name);
+                        counter=$((++counter));
+                        yq -i  ".watch.${service}.counter=${counter}" $eddy_yaml_name;
+                    fi
+                    continue;
+                else
+                    command_mode='user_command';
+                    echo ">>> command: $command"
+                    eval "$command 2>&1";
                 fi
             fi
         done
     done
-    docker-compose -f $docker_compose_file up -d 2>&1;
+
+    if [[ $command_mode == 'default' ]]; then
+        echo ">>> command: docker-command -f $docker_compose_file up -d";
+        docker-compose -f $docker_compose_file up -d 2>&1;
+    fi
 fi
