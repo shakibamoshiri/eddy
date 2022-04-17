@@ -6,7 +6,7 @@
 # bash strict mode
 set -Eeuo pipefail
 # debug mode
-# set -x
+#  set -x
 
 function __error_handing__(){
     local last_status_code=$1;
@@ -336,11 +336,21 @@ if [[ ${_init['flag']} == 1 ]]; then
 ";
             for service in ${services[*]}; do
                 mapfile -t eddy_service_data   < <(yq ".watch.${service}.reload, .watch.${service}.file, .watch.${service}.path, .watch.${service}.command" $eddy_yaml_name);
+
+                # create an array to check the first name if it is a valid command or not 
                 mapfile -t -d ' ' user_cmd <<< ${eddy_service_data[3]};
+                # when it is == default, no need to check
+                # default is: docker-compose, update user_cmd[0]
+                user_cmd[0]=$(tr -d '\n' <<< ${user_cmd[0]});
+                if [[ ${user_cmd[0]} == 'default' ]]; then
+                    user_cmd[0]='docker-compose';
+                fi
+
+                # echo "command: ${user_cmd[0]}";
                 if which ${user_cmd[0]} > /dev/null 2>&1; then
                     eddy_service_data[3]="$(which ${user_cmd[0]}) $(tr -d '\n' <<< ${user_cmd[@]:1})";
                 else
-                    echo "${user_cmd[0]} not found";
+                    echo "command: ${user_cmd[0]} not found in your \$PATH";
                     exit 1;
                 fi
                 direvent_config_file+="
